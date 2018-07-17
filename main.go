@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/graphql-go/graphql"
-	gqlhandler "github.com/graphql-go/graphql-go-handler"
 	"io/ioutil"
 	"log"
 	"net/http"
+
+	"github.com/graphql-go/graphql"
+	gqlhandler "github.com/graphql-go/graphql-go-handler"
 )
 
 // Post is a post
@@ -46,26 +47,29 @@ func main() {
 	})
 	http.Handle("/graphql", handler)
 	log.Println("Server started at http://localhost:3000/graphql")
+	log.Println("example:curl -g 'http://localhost:3000/graphql?query={post(id:5){userId,id,body,title,comments{id,email,name}}}'")
 	log.Fatal(http.ListenAndServe(":3000", nil))
 }
 
 func createQueryType(postType *graphql.Object) graphql.ObjectConfig {
-	return graphql.ObjectConfig{Name: "QueryType", Fields: graphql.Fields{
-		"post": &graphql.Field{
-			Type: postType,
-			Args: graphql.FieldConfigArgument{
-				"id": &graphql.ArgumentConfig{
-					Type: graphql.NewNonNull(graphql.Int),
+	return graphql.ObjectConfig{
+		Name: "QueryType",
+		Fields: graphql.Fields{
+			"post": &graphql.Field{
+				Type: postType,
+				Args: graphql.FieldConfigArgument{
+					"id": &graphql.ArgumentConfig{
+						Type: graphql.NewNonNull(graphql.Int),
+					},
+				},
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					id := p.Args["id"]
+					v, _ := id.(int)
+					log.Printf("fetching post with id: %d", v)
+					return fetchPostByiD(v)
 				},
 			},
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				id := p.Args["id"]
-				v, _ := id.(int)
-				log.Printf("fetching post with id: %d", v)
-				return fetchPostByiD(v)
-			},
-		},
-	}}
+		}}
 }
 
 func createPostType(commentType *graphql.Object) *graphql.Object {
